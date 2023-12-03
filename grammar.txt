@@ -1,0 +1,7 @@
+expr : term ((Plus|Minus) term)*
+
+term : factor((Mul|Div) factor)*
+
+factor : Int|Real
+       : (Plus|Minus) factor
+       : LParen expr RParen
