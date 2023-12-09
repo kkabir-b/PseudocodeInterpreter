@@ -2,14 +2,16 @@
 #-----------------------------
 
 from strings_with_arrows import * #Huge thanks to CodePulse for this library
-
+import string
 #Constant
 #-----------------------------
 DIGITS = '0123456789'
-
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 #ERRORS
 #-----------------------------
+
 class Error:
     def __init__(self, pos_start,pos_end,error_name, details):
         self.pos_start = pos_start
@@ -78,6 +80,9 @@ class Position:
             self.col = 0
 
         return self
+    def regress(self,current_char = None):
+        self.idx -= 1
+        self.col -= 1
 
     def copy(self):
         return Position(self.idx,self.ln,self.col,self.fn,self.ftxt)
@@ -86,6 +91,9 @@ class Position:
 #-----------------------------
 TT_INT = 'Int'
 TT_REAL = 'Real'
+TT_IDENTIFIER = 'Identifier'
+TT_KEYWORD = 'Keyword'
+TT_EQ = 'Eq'
 TT_PLUS = 'Plus'
 TT_MINUS = 'Minus'
 TT_MUL = 'Mul'
@@ -94,6 +102,10 @@ TT_POWER = 'Power'
 TT_LPAREN = 'LParen'
 TT_RPAREN = "RParen"
 TT_EOF = "Eof"
+
+KEYWORDS = [
+
+]
 
 class Token:
     def __init__(self,type_,value = None, pos_start = None, pos_end = None):
@@ -123,7 +135,10 @@ class Lexer:
     def advance(self):
         self.pos.advance(self.current_char)
         self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
+    def regress(self):
 
+        self.pos.regress(self.current_char)
+        self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
     def make_tokens(self):
         tokens = []
 
@@ -132,6 +147,9 @@ class Lexer:
             if self.current_char in ' \t':
                 self.advance()
 
+            elif self.current_char in LETTERS:
+                self.make_identifier()
+
             elif self.current_char in DIGITS:
                 tokens.append(self.make_number())
 
@@ -139,7 +157,13 @@ class Lexer:
                 tokens.append(Token(TT_PLUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '-':
-                tokens.append(Token(TT_MINUS, pos_start=self.pos))
+                self.advance()
+                print(self.current_char, 'curr')
+                if self.current_char == '>':
+                    tokens.append(Token(TT_EQ,pos_start=self.pos))
+                else:
+                    self.regress()
+                    tokens.append(Token(TT_MINUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '*':
                 tokens.append(Token(TT_MUL, pos_start=self.pos))
@@ -159,7 +183,6 @@ class Lexer:
                 self.advance()
             else:
                 pos_start = self.pos.copy()
-
                 char = self.current_char
                 self.advance()
                 return [],IllegalCharError(pos_start,self.pos,"'" + char + "'")
@@ -184,6 +207,16 @@ class Lexer:
             return Token(TT_INT,int(num_str),pos_start,self.pos)
         else:
             return Token(TT_REAL,float(num_str),pos_start,self.pos)
+
+    def make_identifier(self):
+        id_str = ''
+        pos_start = self.pos.copy()
+
+        while self.current_char != None and self.current_char in LETTERS_DIGITS + '_':
+            id_str += self.current_char
+            self.advance()
+        tok_type = TT_KEYWORD if id_str in KEYWORDS else TT_IDENTIFIER
+        return Token(tok_type,id_str,pos_start,self.pos)
 
 #nodes
 #--------------------------------------------------
