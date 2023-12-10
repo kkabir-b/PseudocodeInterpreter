@@ -1,4 +1,5 @@
-expr : term ((Plus|Minus) term)*
+expr : IDENTIFIER EQ expr
+     : term ((Plus|Minus) term)*
 
 term : factor((Mul|Div) factor)*
 
@@ -7,5 +8,5 @@ factor : (Plus|Minus) factor
 
 power : atom (Power factor)*
 
-atom  : Int|Real
+atom  : Int|Real|Identifier
       : LParen expr RParen
