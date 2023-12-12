@@ -169,6 +169,11 @@ class Lexer:
                     self.regress()
                     tokens.append(Token(TT_MINUS, pos_start=self.pos))
                 self.advance()
+            elif self.current_char == '<':
+                self.advance()
+                if self.current_char == '-':
+                    self.advance()
+                    tokens.append(Token(TT_EQ,pos_start=self.pos))
             elif self.current_char == '*':
                 tokens.append(Token(TT_MUL, pos_start=self.pos))
                 self.advance()
