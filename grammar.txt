@@ -1,12 +1,20 @@
-expr : IDENTIFIER EQ expr
-     : term ((Plus|Minus) term)*
+expr       :
+           : IDENTIFIER EQ expr
+           : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
 
-term : factor((Mul|Div) factor)*
+comp-expr  : NOT comp-expr
+           : arith-expr ((EE|LT|LTE|GT|GTE|NE) arith-expr)*
 
-factor : (Plus|Minus) factor
-       : power
+arith-expr :
+           : term ((Plus|Minus) term)*
 
-power : atom (Power factor)*
+term       : factor((Mul|Div) factor)*
+
+factor     : (Plus|Minus) factor
+           : power
+
+power      : atom (Power factor)*
 
 atom  : Int|Real|Identifier
       : LParen expr RParen
+
