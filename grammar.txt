@@ -15,6 +15,9 @@ factor     : (Plus|Minus) factor
 
 power      : atom (Power factor)*
 
-atom  : Int|Real|Identifier
-      : LParen expr RParen
+atom       : Int|Real|Identifier
+           : LParen expr RParen
+
+if-expr    : KEYWORD: IF expr KEYWORD:THEN expr
+             (KEYWORD:ELSE expr)?
 
