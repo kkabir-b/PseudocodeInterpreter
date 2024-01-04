@@ -21,3 +21,8 @@ atom       : Int|Real|Identifier
 if-expr    : KEYWORD: IF expr KEYWORD:THEN expr
              (KEYWORD:ELSE expr)?
 
+for-expr  : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr
+             (KEYWORD:STEP expr)? expr
+while-expr: KEYWORD:WHILE expr KEYWORD:DO expr
+
+repeat-expr: KEYWORK:REPEAT expr KEYWORD:UNTIL expr
