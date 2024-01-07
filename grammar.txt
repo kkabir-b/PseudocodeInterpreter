@@ -13,7 +13,9 @@ term       : factor((Mul|Div) factor)*
 factor     : (Plus|Minus) factor
            : power
 
-power      : atom (Power factor)*
+power      : call (Power factor)*
+
+call       : atom (expr (IDENTIFIER (COMMA expr)*)? RPAREN)?
 
 atom       : Int|Real|Identifier
            : LParen expr RParen
@@ -26,3 +28,7 @@ for-expr  : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr
 while-expr: KEYWORD:WHILE expr KEYWORD:DO expr
 
 repeat-expr: KEYWORK:REPEAT expr KEYWORD:UNTIL expr
+
+func-def   : KEYWORK:FUNCTION IDENTIFIER?
+             LPAREM (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
+             ARROW expr KEYWORD:RETURNS datatype
