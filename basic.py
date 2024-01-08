@@ -649,7 +649,7 @@ class Parser:
         node = res.register(self.bin_op(self.arith_expr,(TT_EE,TT_NE,TT_LT,TT_LTE,TT_GT,TT_GTE)))
         tok = self.current_tok
         if res.error:
-            return res.failure(InvalidSyntaxError(tok.pos_start,tok.pos_end,"Expected int,real, '+', '-', or '(','NOT'"))
+            return res #...
         return res.success(node)
     def expr(self):
         res = ParseResult()
