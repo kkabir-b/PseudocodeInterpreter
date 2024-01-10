@@ -93,6 +93,7 @@ class Position:
 #-----------------------------
 TT_INT = 'Int'
 TT_REAL = 'Real'
+TT_STRING = 'String'
 TT_IDENTIFIER = 'Identifier'
 TT_KEYWORD = 'Keyword'
 TT_EQ = 'Eq'
@@ -150,7 +151,6 @@ class Lexer:
         self.pos.advance(self.current_char)
         self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
     def regress(self):
-
         self.pos.regress(self.current_char)
         self.current_char = self.text[self.pos.idx] if self.pos.idx < len(self.text) else None
     def make_tokens(self):
@@ -162,13 +162,16 @@ class Lexer:
                 self.advance()
 
             elif self.current_char in LETTERS:
-
                 tokens.append(self.make_identifier())
 
             elif self.current_char in DIGITS:
                 tokens.append(self.make_number())
 
-            elif self.current_char == '+':
+
+            elif self.current_char in ['"',"'"]:
+                tokens.append(self.make_string(self.current_char))
+
+            elif self.current_char == '+' or self.current_char == '&':
                 tokens.append(Token(TT_PLUS, pos_start=self.pos))
                 self.advance()
             elif self.current_char == '-':
@@ -216,6 +219,18 @@ class Lexer:
         tokens.append(Token(TT_EOF, pos_start=self.pos))
 
         return tokens, None
+
+    def make_string(self,end):
+        string = ''
+        pos_start = self.pos.copy()
+        self.advance()
+        while self.current_char != None and self.current_char != end:
+            string += self.current_char
+            self.advance()
+
+        self.advance()
+        return Token(TT_STRING,string,pos_start,self.pos)
+
 
     def make_number(self):
         num_str = ''
@@ -272,6 +287,15 @@ class Lexer:
 #--------------------------------------------------
 
 class NumberNode:
+    def __init__(self,tok):
+        self.tok = tok
+        self.pos_start = self.tok.pos_start
+        self.pos_end = self.tok.pos_end
+
+    def __repr__(self):
+        return f'{self.tok}'
+
+class StringNode:
     def __init__(self,tok):
         self.tok = tok
         self.pos_start = self.tok.pos_start
@@ -574,6 +598,9 @@ class Parser:
         if tok.type in [TT_INT,TT_REAL]:
             res.register(self.advance())
             return res.success(NumberNode(tok))
+        if tok.type == TT_STRING:
+            res.register(self.advance())
+            return res.success(StringNode(tok))
 
         elif tok.type == TT_IDENTIFIER:
             res.register(self.advance())
@@ -615,7 +642,7 @@ class Parser:
             return res.success(function_def)
 
 
-        return res.failure(InvalidSyntaxError(tok.pos_start,tok.pos_end,"Expected int,real, '+', '-', or '('"))
+        return res.failure(InvalidSyntaxError(tok.pos_start,tok.pos_end,"Expected int,real, '+', '-','(','IF','FOR','WHILE','REPEAT', or 'FUNCTION'"))
 
     def power(self):
         return self.bin_op(self.call,(TT_POWER,),self.factor)
@@ -649,7 +676,7 @@ class Parser:
         node = res.register(self.bin_op(self.arith_expr,(TT_EE,TT_NE,TT_LT,TT_LTE,TT_GT,TT_GTE)))
         tok = self.current_tok
         if res.error:
-            return res #...
+            return res
         return res.success(node)
     def expr(self):
         res = ParseResult()
@@ -947,6 +974,26 @@ class Number(Value):
     def __repr__(self):
         return f'{self.value}'
 
+class String(Value):
+    def __init__(self,value):
+        super().__init__()
+        self.value = value
+
+    def added_to(self,other):
+        if isinstance(other,String):
+            return String(self.value + other.value).set_context(self.context),None
+        else:
+            return None,Value.illegal_operation(self,other)
+
+    def copy(self):
+        copy = String(self.value)
+        copy.set_pos(self.pos_start,self.pos_end)
+        copy.set_context(self.context)
+        return copy
+    def __repr__(self):
+        return f'"{self.value}"'
+
+
 class Function(Value):
     def __init__(self,name,body_node,arg_names):
         super().__init__()
@@ -1065,6 +1112,11 @@ class Interpreter:
             Number(node.tok.value).set_context(context).set_pos(node.pos_start,node.pos_end)
         )
 
+    def visit_StringNode(self,node,context):
+        return RTResult().success(
+            String(node.tok.value).set_context(context).set_pos(node.pos_start,node.pos_end)
+        )
+
     def visit_BinOpNode(self,node,context):
         res = RTResult()
         left = res.register(self.visit(node.left_node,context))
@@ -1072,7 +1124,7 @@ class Interpreter:
         right = res.register(self.visit(node.right_node,context))
         if res.error: return res
 
-        if node.op_tok.type == TT_PLUS:
+        if node.op_tok.type == TT_PLUS or node.op_tok.type:
             result,error = left.added_to(right)
 
         if node.op_tok.type == TT_MINUS:
