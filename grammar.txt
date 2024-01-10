@@ -17,7 +17,7 @@ power      : call (Power factor)*
 
 call       : atom (expr (IDENTIFIER (COMMA expr)*)? RPAREN)?
 
-atom       : Int|Real|Identifier
+atom       : Int|Real|String|Identifier
            : LParen expr RParen
 
 if-expr    : KEYWORD: IF expr KEYWORD:THEN expr
