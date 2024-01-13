@@ -19,6 +19,11 @@ call       : atom (expr (IDENTIFIER (COMMA expr)*)? RPAREN)?
 
 atom       : Int|Real|String|Identifier
            : LParen expr RParen
+           :list-expr
+           :if-expr
+           :for-expr
+           :while-expr
+           :func-def
 
 if-expr    : KEYWORD: IF expr KEYWORD:THEN expr
              (KEYWORD:ELSE expr)?
@@ -32,3 +37,5 @@ repeat-expr: KEYWORK:REPEAT expr KEYWORD:UNTIL expr
 func-def   : KEYWORK:FUNCTION IDENTIFIER?
              LPAREM (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
              ARROW expr KEYWORD:RETURNS datatype
+
+list-expr: LSQUAREBRACKET (expr (IDENTIFIER (COMMA expr)*) RSQUAREBRACKET
