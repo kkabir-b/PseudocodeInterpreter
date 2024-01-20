@@ -1,3 +1,6 @@
+
+statements : NEWLINE* expr (NEWLINE+ expr)* NEWLINE
+
 expr       :
            : IDENTIFIER EQ expr
            : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
@@ -25,17 +28,31 @@ atom       : Int|Real|String|Identifier
            :while-expr
            :func-def
 
-if-expr    : KEYWORD: IF expr KEYWORD:THEN expr
-             (KEYWORD:ELSE expr)?
+if-expr    : KEYWORD: IF expr
+             NEWLINE KEYWORD:THEN NEWLINE
+             statements
+             (else-expr)?
+             KEYWORD:ENDIF Newline|Eof
+
+else-expr  : KEYWORD:ELSE
+             statements
 
 for-expr  : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr
-             (KEYWORD:STEP expr)? expr
-while-expr: KEYWORD:WHILE expr KEYWORD:DO expr
+             (KEYWORD:STEP expr)? NEWLINE
+             statements
+             KEYWORD:NEXT IDENTIFIER Newline|Eof
 
-repeat-expr: KEYWORK:REPEAT expr KEYWORD:UNTIL expr
+while-expr: KEYWORD:WHILE expr NEWLINE KEYWORD:DO NEWLINE
+            statements
+            KEYWORD:ENDWHILE Newline|Eof
 
-func-def   : KEYWORK:FUNCTION IDENTIFIER?
-             LPAREM (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
-             ARROW expr KEYWORD:RETURNS datatype
+repeat-expr: KEYWORK:REPEAT expr NEWLINE
+             statements
+             KEYWORD:UNTIL expr Newline|Eof
+
+func-def   : KEYWORD:FUNCTION IDENTIFIER
+             LPAREM (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN KEYWORD:RETURNS datatype NEWLINE
+             statements
+             KEYWORD:ENDFUNCTION
 
 list-expr: LSQUAREBRACKET (expr (IDENTIFIER (COMMA expr)*) RSQUAREBRACKET
