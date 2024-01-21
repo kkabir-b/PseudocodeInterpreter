@@ -1,0 +1,6 @@
+a <- 3
+b <- 4
+FOR i<- 1 TO 100 STEP 3
+    a <- a + b
+NEXT i
+OUTPUT(a)
