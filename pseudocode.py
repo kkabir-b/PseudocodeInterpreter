@@ -1,5 +1,5 @@
-#imports
-#-----------------------------
+global error_det
+error_det = ''
 
 from strings_with_arrows import * #Huge thanks to CodePulse for this library
 import string
@@ -20,8 +20,9 @@ class Error:
         self.details = details
 
     def as_string(self):
+        global error_det
         result = f'{self.error_name}:{self.details}\n'
-        result += f'File {self.pos_start.fn}, lines {self.pos_start.ln + 1} to {self.pos_end.ln}'
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
         return result
 
 
@@ -34,9 +35,11 @@ class IllegalCharError(Error):
 class InvalidSyntaxError(Error):
     def __init__(self, pos_start, pos_end, details = ''):
         super().__init__(pos_start, pos_end, 'Invalid syntax', details)
+
     def as_string(self):
-        result = f'{self.error_name}:\n'
-        result += f'File {self.pos_start.fn}, lines {self.pos_start.ln + 1} to {self.pos_end.ln}'
+        global error_det
+        result = f'{self.error_name}\n'
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
         return result
 class ExpectedCharError(Error):
     def __init__(self, pos_start, pos_end, details):
@@ -475,7 +478,6 @@ class Parser:
 
 
     def advance(self):
-
         self.tok_idx += 1
         if self.tok_idx < len(self.tokens):
             self.current_tok = self.tokens[self.tok_idx]
@@ -498,7 +500,6 @@ class Parser:
 
     def parse(self):
         res = self.statements()
-
         if not res.error and self.current_tok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
@@ -516,7 +517,6 @@ class Parser:
         while self.current_tok.type == TT_Newline:
             res.register(self.advance())
 
-
         statement = res.register(self.expr())
         if res.error: return res
         statements.append(statement)
@@ -533,7 +533,7 @@ class Parser:
             if not more_statements: break
             statement = res.try_register(self.expr())
             if statement == None:
-                self.reverse(res.to_reverse_count)
+                self.reverse(1)
                 more_statements = False
                 continue
             statements.append(statement)
@@ -579,7 +579,8 @@ class Parser:
                                                   self.current_tok.pos_end, f"Expected Newline"))
         res.register(self.advance())
         body = res.register(self.statements())
-        if res.error: return res
+        if res.error:
+            return res
 
         if not self.current_tok.matches(TT_KEYWORD,'NEXT'):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
@@ -714,7 +715,8 @@ class Parser:
     def call(self):
         res = ParseResult()
         atom = res.register(self.atom())
-        if res.error: return res
+        if res.error:
+            return res
 
         if self.current_tok.type == TT_LPAREN:
             res.register(self.advance())
@@ -779,7 +781,8 @@ class Parser:
 
         elif tok.matches(TT_KEYWORD,'FOR'):
             for_expr = res.register(self.for_expr())
-            if res.error:return res
+            if res.error:
+                return res
             return res.success(for_expr)
 
         elif tok.matches(TT_KEYWORD,'WHILE'):
@@ -812,7 +815,8 @@ class Parser:
         if tok.type in (TT_PLUS,TT_MINUS):
             res.register(self.advance())
             factor = res.register(self.factor())
-            if res.error: return res
+            if res.error:
+                return res
             return res.success(UnaryOpNode(tok,factor))
 
         return self.power()
