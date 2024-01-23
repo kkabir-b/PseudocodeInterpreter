@@ -10,5 +10,5 @@ import pseudocode
 #             print(repr(result))
 fn = input('Enter file name->')
 f = open(fn+'.txt','r').read()
-_,error = basic.run(fn,f)
+_,error = pseudocode.run(fn,f)
 if error:print(error.as_string())
