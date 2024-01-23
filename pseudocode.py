@@ -909,24 +909,39 @@ class Parser:
             return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected indentifier"))
         var_name_tok = self.current_tok
         res.register(self.advance())
+
         if self.current_tok.type != TT_LPAREN:
             tok = self.current_tok
             return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected '('"))
+
         res.register(self.advance())
         arg_name_toks = []
         if self.current_tok.type == TT_IDENTIFIER:
             arg_name_toks.append(self.current_tok)
             res.register(self.advance())
-
+            if not self.current_tok.type == TT_Arrow:
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected ':'"))
+            res.register(self.advance())
+            if not self.current_tok.type == TT_IDENTIFIER or self.current_tok.value not in ['REAL', 'INTEGER', 'CHAR','BOOLEAN', 'STRING']:
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected datatype"))
+            res.register(self.advance())
             while self.current_tok.type == TT_Comma:
-
                 res.register(self.advance())
+
                 if self.current_tok.type != TT_IDENTIFIER:
                     tok = self.current_tok
                     return res.failure(
                         InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected identifier"))
-                arg_name_toks.append(self.current_tok)
+                name = self.current_tok
                 res.register(self.advance())
+                if not self.current_tok.type == TT_Arrow:
+                    return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected ':'"))
+                res.register(self.advance())
+                if not self.current_tok.type == TT_IDENTIFIER or self.current_tok.value not in ['REAL', 'INTEGER', 'CHAR', 'BOOLEAN', 'STRING']:
+                    return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected datatype"))
+                arg_name_toks.append(name)
+                res.register(self.advance())
+
 
             if self.current_tok.type != TT_RPAREN:
                 tok = self.current_tok
@@ -960,6 +975,7 @@ class Parser:
         expr = res.register(self.expr())
         if res.error: return res
         res.register(self.advance())
+
         if not self.current_tok.matches(TT_KEYWORD,'ENDFUNCTION'):
             tok = self.current_tok
             return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected 'ENDFUNCTION'"))
@@ -967,6 +983,7 @@ class Parser:
         if not self.current_tok.type in (TT_Newline,TT_EOF):
             tok = self.current_tok
             return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected Newline or EOF'"))
+
         return res.success(FuncDefNode(
             var_name_tok,arg_name_toks,node_to_return,expr
 
