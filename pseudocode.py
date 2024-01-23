@@ -21,8 +21,7 @@ class Error:
 
     def as_string(self):
         result = f'{self.error_name}:{self.details}\n'
-        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
-        result += '\n\n' + string_with_arrows(self.pos_start.ftxt, self.pos_start, self.pos_end) + '\n'
+        result += f'File {self.pos_start.fn}, lines {self.pos_start.ln + 1} to {self.pos_end.ln}'
         return result
 
 
@@ -35,6 +34,10 @@ class IllegalCharError(Error):
 class InvalidSyntaxError(Error):
     def __init__(self, pos_start, pos_end, details = ''):
         super().__init__(pos_start, pos_end, 'Invalid syntax', details)
+    def as_string(self):
+        result = f'{self.error_name}:\n'
+        result += f'File {self.pos_start.fn}, lines {self.pos_start.ln + 1} to {self.pos_end.ln}'
+        return result
 class ExpectedCharError(Error):
     def __init__(self, pos_start, pos_end, details):
         super().__init__(pos_start,pos_end,'Expected character',details)
@@ -472,10 +475,13 @@ class Parser:
 
 
     def advance(self):
+
         self.tok_idx += 1
         if self.tok_idx < len(self.tokens):
             self.current_tok = self.tokens[self.tok_idx]
+
         return self.current_tok
+
     def regress(self):
         self.tok_idx -= 1
         self.current_tok = self.tokens[self.tok_idx]
@@ -492,6 +498,7 @@ class Parser:
 
     def parse(self):
         res = self.statements()
+
         if not res.error and self.current_tok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.current_tok.pos_start, self.current_tok.pos_end,
@@ -508,7 +515,7 @@ class Parser:
         n = 0
         while self.current_tok.type == TT_Newline:
             res.register(self.advance())
-            n = 1
+
 
         statement = res.register(self.expr())
         if res.error: return res
@@ -829,6 +836,7 @@ class Parser:
         if res.error:
             return res
         return res.success(node)
+
     def expr(self):
         res = ParseResult()
         if self.current_tok.type == TT_IDENTIFIER:
@@ -841,7 +849,6 @@ class Parser:
                 if res.error: return res
                 return res.success(VarAssignNode(var_name,expr))
             self.regress()
-
 
         return self.bin_op(self.comp_expr,((TT_KEYWORD,'AND'),(TT_KEYWORD,'OR')))
 
@@ -1306,7 +1313,7 @@ class Function(BaseFunction):
         if res.error: return res
         value = res.register(interpreter.visit(self.body_node, new_context))
         if res.error: return res
-        q = res.register(interpreter.visit(self.res_node,new_context))
+        q = res.register(interpreter.visit(self.ret_node,new_context))
         return res.success(q)
 
     def copy(self):
@@ -1358,7 +1365,19 @@ class BuiltInFunction(BaseFunction):
 
     execute_output.arg_names = ['value']
 
+    def execute_mid(self,exec_ctx):
+
+        s = exec_ctx.symbol_table.get('s')
+        a = exec_ctx.symbol_table.get('a')
+        b = exec_ctx.symbol_table.get('b')
+        print(a.value)
+        print(str(s)[a.value - 1 :a.value - 1 + b.value ])
+        return RTResult().success(Number(0))
+
+    execute_mid.arg_names = ['s','a','b']
+
 BuiltInFunction.output = BuiltInFunction('output')
+BuiltInFunction.mid = BuiltInFunction('mid')
 #context
 #--------------------------------------------------
 
@@ -1615,6 +1634,7 @@ global_symbol_table.set('TRUE',Number(1))
 global_symbol_table.set('FALSE',Number(0))
 
 global_symbol_table.set('OUTPUT',BuiltInFunction.output)
+global_symbol_table.set('MID',BuiltInFunction.output)
 
 def run(fn,text):
     lexer = Lexer(fn,text)
