@@ -1,4 +1,4 @@
-import pseudocode
+import basic
 # while True:
 #     text = input('stdin >')
 #     result,error = basic.run('Standard input',text)
