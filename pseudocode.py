@@ -624,6 +624,7 @@ class Parser:
         res.register(self.advance())
         body = res.register(self.statements())
         if res.error: return res
+
         if not self.current_tok.matches(TT_KEYWORD,'ENDWHILE'):
                 return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                       self.current_tok.pos_end, f"Expected 'ENDWHILE'"))
@@ -705,8 +706,6 @@ class Parser:
         if not self.current_tok.type in (TT_Newline,TT_EOF):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end, f"Expected EOF or Newline"))
-
-
 
         return res.success(IfNode(cases,else_case))
 
@@ -1391,9 +1390,8 @@ class BuiltInFunction(BaseFunction):
         s = exec_ctx.symbol_table.get('s')
         a = exec_ctx.symbol_table.get('a')
         b = exec_ctx.symbol_table.get('b')
-        print(a.value)
-        print(str(s)[a.value - 1 :a.value - 1 + b.value ])
-        return RTResult().success(Number(0))
+        f = str(s)[a.value - 1 :a.value - 1 + b.value ]
+        return RTResult().success(Number(String(f)))
 
     execute_mid.arg_names = ['s','a','b']
 
@@ -1655,7 +1653,7 @@ global_symbol_table.set('TRUE',Number(1))
 global_symbol_table.set('FALSE',Number(0))
 
 global_symbol_table.set('OUTPUT',BuiltInFunction.output)
-global_symbol_table.set('MID',BuiltInFunction.output)
+global_symbol_table.set('MID',BuiltInFunction.mid)
 
 def run(fn,text):
     lexer = Lexer(fn,text)
