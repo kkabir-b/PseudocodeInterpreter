@@ -1,4 +1,17 @@
 # PseudocodeInterpreter
 An interpreter used for CAIE pseudocode written in python
 
-To run, load the script in your preferred IDE along with a txt file containing the pseudocode you want to run. Run shell.py and enter the name of the file
+## Grammar Rules
+This interpreter makes use of the CAIE pseudocode IGCSE and A-Level syntax, however declarations of variables and neither required not supported.
+
+Currently it supports:
+- Normal arithmetic operations(Including addition, subtraction, multiplication, division, and powers)
+- Data types: Integers, Real, Strings, and Booleans(Booleans which are represented and used internally using the Integer values 1 and 0)
+- Iterative loops including For loop, While loops, and Repeat until loops
+- Subroutines including functions(supporting return statements)
+- 
+## Examples
+
+## How to run
+
+## BuiltIn Functions
