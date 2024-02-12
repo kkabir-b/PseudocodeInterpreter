@@ -8,10 +8,12 @@ Currently it supports:
 - Normal arithmetic operations(Including addition, subtraction, multiplication, division, and powers)
 - Data types: Integers, Real, Strings, and Booleans(Booleans which are represented and used internally using the Integer values 1 and 0)
 - Iterative loops including For loop, While loops, and Repeat until loops
-- Subroutines including functions(supporting return statements)
-- 
+- Subroutines including functions(supporting return statements) and procedures
+- Selection statements including IF ELSE
 ## Examples
+Example 1(
 
 ## How to run
 
 ## BuiltIn Functions
+The BuiltIn functions are based upon the CAIE
