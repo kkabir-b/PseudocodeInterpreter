@@ -125,7 +125,7 @@ TT_Newline = 'Newline'
 TT_EOF = "Eof"
 
 KEYWORDS = [
-'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN'
+'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN','PROCEDURE','ENDPROCEDURE'
 ]
 
 class Token:
@@ -413,6 +413,13 @@ class FuncDefNode:
         self.body_node = body_nodes
         self.pos_start = self.var_name_tok.pos_start
         self.ret_node = ret_node
+        self.pos_end = self.body_node.pos_end
+class ProcedureDefNode:
+    def __init__(self,var_name_tok,arg_name_toks,body_nodes):
+        self.var_name_tok = var_name_tok
+        self.arg_name_toks = arg_name_toks
+        self.body_node = body_nodes
+        self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.body_node.pos_end
 
 class CallNode:
@@ -793,15 +800,19 @@ class Parser:
             if res.error:
                 return res
             return res.success(repeat_expr)
+
         elif tok.matches(TT_KEYWORD,"FUNCTION"):
             function_def = res.register(self.func_def())
             if res.error:
                 return res
-
             return res.success(function_def)
 
-        else:
+        elif tok.matches(TT_KEYWORD,'PROCEDURE'):
+            procedure_def = res.register(self.pocedure_def())
+            if res.error: return res
+            return res.success(procedure_def)
 
+        else:
             return res.failure(InvalidSyntaxError(tok.pos_start,tok.pos_end,"Expected int,real, '+', '-','(','IF','FOR','WHILE','REPEAT', or 'FUNCTION'"))
 
     def power(self):
@@ -895,6 +906,78 @@ class Parser:
             res.register(self.advance())
         return ListNode(element_nodes,pos_start,self.current_tok.pos_end.copy())
 
+    def pocedure_def(self):
+        res = ParseResult()
+        tok = self.current_tok
+        if not self.current_tok.matches(TT_KEYWORD,'PROCEDURE'):
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected 'PROCEDURE'"))
+        res.register(self.advance())
+
+        if self.current_tok.type != TT_IDENTIFIER:
+            tok = self.current_tok
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected indentifier"))
+        var_name_tok = self.current_tok
+        res.register(self.advance())
+
+        if self.current_tok.type != TT_LPAREN:
+            tok = self.current_tok
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected '('"))
+
+        res.register(self.advance())
+        arg_name_toks = []
+        if self.current_tok.type == TT_IDENTIFIER:
+            arg_name_toks.append(self.current_tok)
+            res.register(self.advance())
+            if not self.current_tok.type == TT_Arrow:
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected ':'"))
+            res.register(self.advance())
+            if not self.current_tok.type == TT_IDENTIFIER or self.current_tok.value not in ['REAL', 'INTEGER', 'CHAR',
+                                                                                            'BOOLEAN', 'STRING']:
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected datatype"))
+            res.register(self.advance())
+            while self.current_tok.type == TT_Comma:
+                res.register(self.advance())
+
+                if self.current_tok.type != TT_IDENTIFIER:
+                    tok = self.current_tok
+                    return res.failure(
+                        InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected identifier"))
+                name = self.current_tok
+                res.register(self.advance())
+                if not self.current_tok.type == TT_Arrow:
+                    return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected ':'"))
+                res.register(self.advance())
+                if not self.current_tok.type == TT_IDENTIFIER or self.current_tok.value not in ['REAL', 'INTEGER',
+                                                                                                'CHAR', 'BOOLEAN',
+                                                                                                'STRING']:
+                    return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected datatype"))
+                arg_name_toks.append(name)
+                res.register(self.advance())
+
+            if self.current_tok.type != TT_RPAREN:
+                tok = self.current_tok
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected ',' or ')'"))
+
+        else:
+            if self.current_tok.type != TT_RPAREN:
+                tok = self.current_tok
+                return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected identifier or ')'"))
+        res.register(self.advance())
+
+        if not self.current_tok.type == TT_Newline:
+            tok = self.current_tok
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected Newline'"))
+
+        node_to_return = res.register(self.statements())
+        if res.error: return res
+        if not self.current_tok.matches(TT_KEYWORD, 'ENDPROCEDURE'):
+            tok = self.current_tok
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected 'ENDPROCEDURE'"))
+        res.register(self.advance())
+        if not self.current_tok.type in (TT_Newline, TT_EOF):
+            tok = self.current_tok
+            return res.failure(InvalidSyntaxError(tok.pos_start, tok.pos_end, "Expected Newline or EOF'"))
+        return res.success(ProcedureDefNode(var_name_tok,arg_name_toks,node_to_return))
 
     def func_def(self):
         res = ParseResult()
@@ -1317,6 +1400,32 @@ class BaseFunction(Value):
         self.populate_args(arg_names,args,exec_ctx)
         return res.success(None)
 
+class Procedure(BaseFunction):
+    def __init__(self,name,body_node,arg_names):
+        super().__init__(name)
+        self.body_node = body_node
+        self.arg_names = arg_names
+
+    def execute(self, args):
+        res = RTResult()
+        interpreter = Interpreter()
+        new_context = self.generateNewContext()
+
+        res.register(self.check_and_populate_args(self.arg_names,args,new_context))
+        if res.error: return res
+        value = res.register(interpreter.visit(self.body_node, new_context))
+        if res.error: return res
+
+        return res.success(Number(0))
+
+    def copy(self):
+        copy = Procedure(self.name, self.body_node, self.arg_names)
+        copy.set_context(self.context)
+        copy.set_pos(self.pos_start, self.pos_end)
+        return copy
+
+    def __repr__(self):
+        return f"<procedure {self.name}>"
 
 class Function(BaseFunction):
     def __init__(self,name,body_node,arg_names,ret_node):
@@ -1324,6 +1433,7 @@ class Function(BaseFunction):
         self.body_node = body_node
         self.arg_names = arg_names
         self.ret_node = ret_node
+
     def execute(self, args):
         res = RTResult()
         interpreter = Interpreter()
@@ -1614,7 +1724,19 @@ class Interpreter:
         return res.success(
             Number(0)
         )
+    def visit_ProcedureDefNode(self,node,context):
+        res = RTResult()
 
+        procedure_name = node.var_name_tok.value if node.var_name_tok else None
+        body_node = node.body_node
+        arg_names = [arg_name.value for arg_name in node.arg_name_toks]
+
+        procedure_value = Procedure(procedure_name,body_node,arg_names).set_context(context).set_pos(node.pos_start,
+                                                                                            node.pos_end)
+
+        if node.var_name_tok:
+            context.symbol_table.set(procedure_name, procedure_value)
+        return res.success(procedure_value)
     def visit_FuncDefNode(self,node,context):
         res = RTResult()
 
