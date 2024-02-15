@@ -125,7 +125,7 @@ TT_Newline = 'Newline'
 TT_EOF = "Eof"
 
 KEYWORDS = [
-'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN','PROCEDURE','ENDPROCEDURE'
+'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN','PROCEDURE','ENDPROCEDURE',"CASE","OF",'ENDCASE'
 ]
 
 class Token:
@@ -380,6 +380,13 @@ class IfNode:
 
         self.pos_start = self.cases[0][0].pos_start
         self.pos_end = (self.else_case or self.cases[-1][0]).pos_end
+class CaseOfNode:
+    def __init__(self,orignalNode,cases):
+        self.cases = cases
+        self.orignalNode = orignalNode
+
+        self.pos_start = orignalNode.pos_start
+        self.pos_end = cases[-1][0].pos_end
 class ForNode:
     def __init__(self,var_name_tok,start_value_node,end_value_node,step_value_node,body_ode):
         self.var_name_tok = var_name_tok
@@ -631,6 +638,7 @@ class Parser:
         res.register(self.advance())
         body = res.register(self.statements())
         if res.error: return res
+        if res.error: return res
 
         if not self.current_tok.matches(TT_KEYWORD,'ENDWHILE'):
                 return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
@@ -664,6 +672,50 @@ class Parser:
                                                   self.current_tok.pos_end, f"Expected newline or EOF"))
         return res.success(RepeatNode(body,condition))
 
+    def case_expr(self):
+        res = ParseResult()
+        cases = []
+        if not self.current_tok.matches(TT_KEYWORD,'CASE'):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                  self.current_tok.pos_end, f"Expected 'CASE'"))
+
+        res.register(self.advance())
+
+        if not self.current_tok.matches(TT_KEYWORD,'OF'):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                  self.current_tok.pos_end, f"Expected 'OF'"))
+        res.register(self.advance())
+        orignalNode = res.register(self.expr())
+        if res.error: return res
+
+        while not self.current_tok.matches(TT_KEYWORD,'ENDCASE'):
+
+            if not self.current_tok.type == TT_Newline:
+                return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                      self.current_tok.pos_end, f"Expected newline"))
+            res.register(self.advance())
+
+            value = res.register(self.expr())
+            if res.error:return res
+
+            if not self.current_tok.type == TT_Arrow:
+                    return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                          self.current_tok.pos_end, f"Expected ':'"))
+
+            res.register(self.advance())
+
+            toDo = res.register(self.statements())
+            if res.error:return res
+            if self.current_tok.type == TT_Arrow:
+                self.regress()
+                self.regress()
+            cases.append([value,toDo])
+
+        res.register(self.advance())
+        if not self.current_tok.type in (TT_EOF,TT_Newline):
+            return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
+                                                  self.current_tok.pos_end, f"Expected EOF or Newline"))
+        return res.success(CaseOfNode(orignalNode,cases))
 
     def if_expr(self):
         res = ParseResult()
@@ -811,6 +863,11 @@ class Parser:
             procedure_def = res.register(self.pocedure_def())
             if res.error: return res
             return res.success(procedure_def)
+
+        elif tok.matches(TT_KEYWORD,'CASE'):
+            case_expr = res.register(self.case_expr())
+            if res.error: return res
+            return res.success(case_expr)
 
         else:
             return res.failure(InvalidSyntaxError(tok.pos_start,tok.pos_end,"Expected int,real, '+', '-','(','IF','FOR','WHILE','REPEAT', or 'FUNCTION'"))
@@ -1649,6 +1706,18 @@ class Interpreter:
 
         if error: return res.failure(error)
         return res.success(number.set_pos(node.pos_start,node.pos_end))
+    def visit_CaseOfNode(self,node,context):
+        res = RTResult()
+        orig = res.register(self.visit(node.orignalNode,context))
+        if res.error:return res
+        for val,expr in node.cases:
+            val = res.register(self.visit(val,context))
+            if res.error:return res
+            if orig.value == val.value:
+                expr_value = res.register(self.visit(expr,context))
+                return res.success(Number(0))
+        return res.success(Number(0))
+
 
     def visit_IfNode(self,node,context):
         res = RTResult()
