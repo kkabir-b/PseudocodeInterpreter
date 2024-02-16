@@ -125,7 +125,7 @@ TT_Newline = 'Newline'
 TT_EOF = "Eof"
 
 KEYWORDS = [
-'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN','PROCEDURE','ENDPROCEDURE',"CASE","OF",'ENDCASE'
+'AND',"OR","NOT","IF","ELSE","THEN","FOR","WHILE","DO","STEP","TO","REPEAT","UNTIL","FUNCTION",'RETURNS','ENDIF','ENDFUNCTION','RETURNS','ENDWHILE',"NEXT",'RETURN','PROCEDURE','ENDPROCEDURE',"CASE","OF",'ENDCASE','CALL'
 ]
 
 class Token:
@@ -176,6 +176,7 @@ class Lexer:
 
             elif self.current_char in LETTERS:
                 tokens.append(self.make_identifier())
+                if tokens[-1].matches(TT_KEYWORD,'CALL'):tokens.pop()
 
             elif self.current_char in DIGITS:
                 tokens.append(self.make_number())
@@ -666,7 +667,7 @@ class Parser:
                                                   self.current_tok.pos_end, f"Expected 'UNTIL'"))
         res.register(self.advance())
         condition = res.register(self.expr())
-        res.register(self.advance())
+
         if not self.current_tok.type in (TT_Newline,TT_EOF):
             return res.failure(InvalidSyntaxError(self.current_tok.pos_start,
                                                   self.current_tok.pos_end, f"Expected newline or EOF"))
@@ -706,6 +707,7 @@ class Parser:
 
             toDo = res.register(self.statements())
             if res.error:return res
+
             if self.current_tok.type == TT_Arrow:
                 self.regress()
                 self.regress()
@@ -1355,6 +1357,12 @@ class String(Value):
         else:
             return None,Value.illegal_operation(self,other)
 
+    def get_comparison_eq(self, other):
+        if isinstance(other,String):
+            return Number(self.value == other.value).set_context(self.context),None
+        else:
+            return None,Value.illegal_operation(self,other)
+
     def copy(self):
         copy = String(self.value)
         copy.set_pos(self.pos_start,self.pos_end)
@@ -1552,18 +1560,51 @@ class BuiltInFunction(BaseFunction):
 
     execute_output.arg_names = ['value']
 
+
+    def execute_left(self,exec_ctx):
+        s = exec_ctx.symbol_table.get('s')
+        a = exec_ctx.symbol_table.get('a')
+        f = str(s)[:a.value]
+        return RTResult().success(String(f))
+    execute_left.arg_names = ['s','a']
+
+
     def execute_mid(self,exec_ctx):
 
         s = exec_ctx.symbol_table.get('s')
         a = exec_ctx.symbol_table.get('a')
         b = exec_ctx.symbol_table.get('b')
         f = str(s)[a.value - 1 :a.value - 1 + b.value ]
-        return RTResult().success(Number(String(f)))
+        return RTResult().success(String(f))
 
     execute_mid.arg_names = ['s','a','b']
 
+    def execute_length(self,exec_ctx):
+        s = exec_ctx.symbol_table.get('s')
+        q = len(str(s))
+        return RTResult().success(Number(q))
+
+    execute_length.arg_names = ['s']
+
+    def execute_asc(self,exec_ctx):
+        s = exec_ctx.symbol_table.get('s')
+        q = ord(str(s))
+        return RTResult().success(Number(q))
+    execute_asc.arg_names = ['s']
+
+    def execute_chr(self,exec_ctx):
+        n = exec_ctx.symbol_table.get('n')
+        q = chr(n.value)
+        return RTResult().success(String(q))
+
+    execute_chr.arg_names = ['n']
+
 BuiltInFunction.output = BuiltInFunction('output')
 BuiltInFunction.mid = BuiltInFunction('mid')
+BuiltInFunction.left = BuiltInFunction('left')
+BuiltInFunction.length = BuiltInFunction('length')
+BuiltInFunction.asc = BuiltInFunction('asc')
+BuiltInFunction.chr = BuiltInFunction('chr')
 #context
 #--------------------------------------------------
 
@@ -1845,6 +1886,10 @@ global_symbol_table.set('FALSE',Number(0))
 
 global_symbol_table.set('OUTPUT',BuiltInFunction.output)
 global_symbol_table.set('MID',BuiltInFunction.mid)
+global_symbol_table.set('LEFT',BuiltInFunction.left)
+global_symbol_table.set('LENGTH',BuiltInFunction.length)
+global_symbol_table.set('ASC',BuiltInFunction.asc)
+global_symbol_table.set('CHR',BuiltInFunction.chr)
 
 def run(fn,text):
     lexer = Lexer(fn,text)
