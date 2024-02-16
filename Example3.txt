@@ -1,0 +1,13 @@
+FUNCTION x(a:INTEGER,b:STRING) RETURNS INTEGER
+    a <- a + 1
+    OUTPUT(b)
+    RETURN a
+ENDFUNCTION
+b <- x(1,"Example3")
+OUTPUT(b)
+
+PROCEDURE y(a:INTEGER, b:STRING)
+    OUTPUT(a)
+    OUTPUT(b)
+ENDPROCEDURE
+CALL y(1,"hi")
