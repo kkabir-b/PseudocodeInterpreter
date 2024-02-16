@@ -1,5 +1,5 @@
-
 statements : NEWLINE* expr (NEWLINE+ expr)* NEWLINE
+
 
 expr       :
            : IDENTIFIER EQ expr
@@ -37,6 +37,10 @@ if-expr    : KEYWORD: IF expr
 else-expr  : KEYWORD:ELSE
              statements
 
+case-expr  : KEYWORD: CASE KEYWORD: OF expr
+             (NEWLINE expr ARROW expr)*
+             NEWLINE KEYWORD:ENDCASE NEWLINE|EOF
+
 for-expr  : KEYWORD:FOR IDENTIFIER EQ expr KEYWORD:TO expr
              (KEYWORD:STEP expr)? NEWLINE
              statements
@@ -51,8 +55,14 @@ repeat-expr: KEYWORK:REPEAT expr NEWLINE
              KEYWORD:UNTIL expr Newline|Eof
 
 func-def   : KEYWORD:FUNCTION IDENTIFIER
-             LPAREM (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN KEYWORD:RETURNS datatype NEWLINE
+             LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN KEYWORD:RETURNS datatype NEWLINE
              statements
-             KEYWORD:ENDFUNCTION
+             KEYWORD:RETURN expr NEWLINE
+             KEYWORD:ENDFUNCTION NEWLINE|Eof
+
+procedure-def :KEYWORD:PROCEDURE IDENTIFIER
+             LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN KEYWORD:RETURNS datatype NEWLINE
+             statements
+             KEYWORD:ENDPROCEDURE NEWLINE|Eof
 
 list-expr: LSQUAREBRACKET (expr (IDENTIFIER (COMMA expr)*) RSQUAREBRACKET
