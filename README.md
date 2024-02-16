@@ -14,10 +14,10 @@ Currently it supports:
 More information can be found in grammar.txt
   
 ## Examples
-Example 1(for arthimetic operations and boolean) in Example1.txt: Returns output for Arithmetic operations and data types
-Example 2(for iterative loops) in Example2.txt: Showcases funcionality of for, while, and repeat until loops
-Example 3(for subroutines) in Example3.txt: Showcases the use of procedures and functions
-Example 4(for selection statements) in Example4.txt: Showcases the use of if-else and case-of statements
+- Example 1(for arthimetic operations and boolean) in Example1.txt: Returns output for Arithmetic operations and data types
+- Example 2(for iterative loops) in Example2.txt: Showcases funcionality of for, while, and repeat until loops
+- Example 3(for subroutines) in Example3.txt: Showcases the use of procedures and functions
+- Example 4(for selection statements) in Example4.txt: Showcases the use of if-else and case-of statements
 
 ## How to run
 You are able to run it through the use of the runPseudocode function in shell.py which takes in the file in string format. 
