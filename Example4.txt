@@ -1,0 +1,14 @@
+a <- "hi"
+
+IF a = 'hi'
+    THEN
+        OUTPUT("hi")
+ELSE
+    OUTPUT("BYE")
+ENDIF
+
+CASE OF a
+    "38":OUTPUT(38)
+    "BYE":OUTPUT("BYE")
+    "hi":OUTPUT("HI")
+ENDCASE
