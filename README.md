@@ -33,3 +33,4 @@ Currently these builtin functions include: OUTPUT, MID, LEFT, LENGTH, ASC and CH
 
 ## Additional notes
 The interpreter supports the use of semi-colons(;) as newlines while semi-colons are not recognised by CAIE 
+A version of the grammar rules are shown in grammar.txt
