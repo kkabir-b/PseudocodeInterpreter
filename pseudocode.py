@@ -1,7 +1,7 @@
 global error_det
 error_det = ''
  
-from strings_with_arrows import string_with_arrows #Huge thanks to CodePulse for this library
+from strings_with_arrows import * #Huge thanks to CodePulse for this library
 import string
 #Constant
 #-----------------------------
