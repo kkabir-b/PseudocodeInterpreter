@@ -6,6 +6,6 @@ def runPseudocode(f):
     if error:print(error.as_string())
 
 #simple script to run a file
-fn = input('Enter file name->')
+fn = input('Enter file name(without .txt)->')
 file = open(fn+'.txt','r').read()
 runPseudocode(file)
